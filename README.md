@@ -11,6 +11,8 @@
 
 A real-time, interactive 2D electrostatics simulator powered by a finite-difference Poisson solver. Visualize electric potential fields, manipulate dielectric materials, and explore electromagnetic behavior with an intuitive web-based interface.
 
+App is live here: https://shahriarcodes.github.io/EM-Sandbox-2D/
+
 ## Features
 
 ### 🧮 Advanced Physics Engine
