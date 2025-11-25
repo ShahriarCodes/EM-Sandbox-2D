@@ -1,0 +1,5 @@
+{
+  "name": "EM-Sandbox-2D",
+  "description": "A real-time 2D electrostatic Poisson solver. Place dielectric slabs and visualize electric potential in a 100x100 grid.",
+  "requestFramePermissions": []
+}
