@@ -38,11 +38,10 @@ $$
 F_{i+1/2,j} - F_{i-1/2,j} + F_{i,j+1/2} - F_{i,j-1/2} = 0.
 $$
 
-Substituting the flux approximations yields the linear relation
+Substituting the flux approximations yields the linear relation:
 
 $$
-\varepsilon_{i+1/2,j}(V_{i+1,j}-V_{i,j}) - \varepsilon_{i-1/2,j}(V_{i,j}-V_{i-1,j}) \\
-+ \varepsilon_{i,j+1/2}(V_{i,j+1}-V_{i,j}) - \varepsilon_{i,j-1/2}(V_{i,j}-V_{i,j-1}) = 0.
+\varepsilon_{i+1/2,j}(V_{i+1,j}-V_{i,j}) - \varepsilon_{i-1/2,j}(V_{i,j}-V_{i-1,j}) + \varepsilon_{i,j+1/2}(V_{i,j+1}-V_{i,j}) - \varepsilon_{i,j-1/2}(V_{i,j}-V_{i,j-1}) = 0.
 $$
 
 Collecting terms and solving for $V_{i,j}$ gives the update formula used by the code:
