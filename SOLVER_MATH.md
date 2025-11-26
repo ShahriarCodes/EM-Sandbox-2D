@@ -112,7 +112,7 @@ where $\hat{V}_{i,j}$ is the Gauss–Seidel update above. Typical $\omega$ value
 - **Epsilon rasterization**: `updateEpsilonGrid()` rasterizes a rectangular slab by assigning `epsilonSlab` to cells inside the slab bounding box and `epsilonBg` elsewhere. The face-centered averaging handles permittivity discontinuities at material interfaces naturally in the discrete operator.
 
 ## Electric Field (post-processing)
-The code computes the electric field \(\mathbf{E} = -\nabla V\) using central differences for visualization (vector field):
+The code computes the electric field $\mathbf{E} = -\nabla V$ using central differences for visualization (vector field):
 
 $$
 E_x \approx -\frac{V_{i+1,j} - V_{i-1,j}}{2h}, \qquad E_y \approx -\frac{V_{i,j+1} - V_{i,j-1}}{2h}.
