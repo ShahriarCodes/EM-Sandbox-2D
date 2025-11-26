@@ -25,7 +25,7 @@ $$
 $$
 
 
-Using a conservative finite-difference discretization (grid spacing \(h=1\)), the in-place Gauss–Seidel update at grid cell \((i,j)\) is a weighted average of neighbors:
+Using a conservative finite-difference discretization (grid spacing $h=1$), the in-place Gauss–Seidel update at grid cell $(i,j)$ is a weighted average of neighbors:
 
 $$
 V_{i,j} = \frac{\varepsilon_{i+1/2,j}V_{i+1,j}+\varepsilon_{i-1/2,j}V_{i-1,j}+\varepsilon_{i,j+1/2}V_{i,j+1}+\varepsilon_{i,j-1/2}V_{i,j-1}}{\varepsilon_{i+1/2,j}+\varepsilon_{i-1/2,j}+\varepsilon_{i,j+1/2}+\varepsilon_{i,j-1/2}}
