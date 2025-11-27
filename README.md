@@ -38,9 +38,8 @@ See `services/solver.ts` and `SOLVER_MATH.md` for a full derivation and details.
 ## References
 This project builds upon the methodology described in the paper by James R. Nagel <span style="color:#16a34a;font-weight:600">[1]</span>.
 
-<span style="color:#16a34a;font-weight:600">[1]</span> James Nagel and Nageljr@ieee Org, "Solving the Generalized Poisson Equation Using the Finite-Difference Method (FDM)", Feb 2011. Available: https://www.researchgate.net/publication/228411289_Solving_the_Generalized_Poisson_Equation_Using_the_Finite-Difference_Method_FDM
 
-#### BibTeX
+<span style="color:#16a34a;font-weight:600">[1]</span> James Nagel and Nageljr@ieee Org, "Solving the Generalized Poisson Equation Using the Finite-Difference Method (FDM)", Feb 2011. Available: https://www.researchgate.net/publication/228411289_Solving_the_Generalized_Poisson_Equation_Using_the_Finite-Difference_Method_FDM
 
 
 
