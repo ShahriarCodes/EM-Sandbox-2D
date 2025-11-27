@@ -21,7 +21,7 @@ App runs at `http://localhost:5173`.
 The solver implements the generalized Poisson equation with spatially varying permittivity $\varepsilon(x,y)$:
 
 $$
-\nabla\cdot\big(\varepsilon\,\nabla V\big)=0
+\nabla\cdot\big(\varepsilon\\nabla V\big)=0
 $$
 
 
