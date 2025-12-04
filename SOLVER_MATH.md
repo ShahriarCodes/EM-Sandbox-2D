@@ -6,13 +6,13 @@ This document explains the mathematics implemented in `services/solver.ts`. It d
 We solve the generalized (steady-state) Poisson equation for electrostatics with spatially varying permittivity $\varepsilon(x,y)$:
 
 $$
-\nabla\cdot\big(\varepsilon\,\nabla V\big) = 0
+\nabla\cdot\big(\varepsilon\nabla V\big) = 0
 $$
 
 In expanded form (2D):
 
 $$
-\frac{\partial}{\partial x}\left(\varepsilon\,\frac{\partial V}{\partial x}\right) + \frac{\partial}{\partial y}\left(\varepsilon\,\frac{\partial V}{\partial y}\right) = 0.
+\frac{\partial}{\partial x}\left(\varepsilon\frac{\partial V}{\partial x}\right) + \frac{\partial}{\partial y}\left(\varepsilon\frac{\partial V}{\partial y}\right) = 0.
 $$
 
 Here $V(x,y)$ is the electric potential and $\varepsilon(x,y)$ is the permittivity field (the code stores this on a per-cell grid). The solver in this project assumes a uniform grid with unit spacing (grid index increments represent equal physical spacing). If your grid spacing is $h$ the finite-difference formula below should include factors of $h$ accordingly.
