@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { SimulationParams } from '../types';
-import { Play, Pause, RotateCcw, Activity, Palette } from 'lucide-react';
+import { SimulationParams, AppMode } from '../types';
+import { Play, Pause, RotateCcw, Activity, Palette, Move, Lock, ShieldCheck } from 'lucide-react';
 
 interface ControlsProps {
   params: SimulationParams;
@@ -9,6 +9,8 @@ interface ControlsProps {
   isRunning: boolean;
   onToggleRun: () => void;
   onReset: () => void;
+  appMode: AppMode;
+  onModeChange: (mode: AppMode) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -17,192 +19,159 @@ const Controls: React.FC<ControlsProps> = ({
   isRunning,
   onToggleRun,
   onReset,
+  appMode,
+  onModeChange,
 }) => {
-  const handleChange = (key: keyof SimulationParams, value: string | boolean) => {
-    if (typeof value === 'boolean') {
-      onParamChange({ ...params, [key]: value });
-    } else if (key === 'vectorColor' || key === 'colorMap') {
-      onParamChange({ ...params, [key]: value as any });
-    } else {
-      const numVal = parseFloat(value as string);
-      if (!isNaN(numVal)) {
-        onParamChange({ ...params, [key]: numVal });
-      }
-    }
+  const handleChange = (key: keyof SimulationParams, value: any) => {
+    onParamChange({ ...params, [key]: value });
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 bg-neutral-900 text-neutral-200 w-full md:w-80 border-r border-neutral-700 h-full overflow-y-auto">
-      <div className="space-y-2">
-        <h1 className="text-xl font-bold text-white">EM Sandbox 2D</h1>
-        <p className="text-xs text-neutral-400">
-          Poisson solver (Finite Difference)
-          <br />
-          Grid: {params.gridSize}x{params.gridSize}
-        </p>
+    <div className="flex flex-col gap-6 p-4 md:p-6 bg-neutral-900 text-neutral-200 w-full md:w-80 border-b md:border-b-0 md:border-r border-neutral-700 h-auto md:h-full overflow-y-auto shrink-0 scrollbar-thin scrollbar-thumb-neutral-700">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold text-white tracking-tight">EM Sandbox</h1>
+        <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Poisson Solver (100x100)</p>
       </div>
 
-      {/* Main Actions */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-3">
         <button
           onClick={onToggleRun}
-          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md font-semibold transition-colors ${
-            isRunning
-              ? 'bg-amber-600 hover:bg-amber-700 text-white'
-              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all shadow-lg active:scale-95 ${
+            isRunning ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
           }`}
         >
-          {isRunning ? (
-            <>
-              <Pause size={18} /> Pause
-            </>
-          ) : (
-            <>
-              <Play size={18} /> Run
-            </>
-          )}
+          {isRunning ? <><Pause size={20} /> Pause</> : <><Play size={20} /> Run Simulation</>}
         </button>
-
-        <button
-          onClick={onReset}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-md bg-neutral-700 hover:bg-neutral-600 text-white transition-colors"
-        >
-          <RotateCcw size={18} /> Reset
+        <button onClick={onReset} className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 font-semibold border border-neutral-700 text-sm">
+          <RotateCcw size={16} /> Reset
         </button>
       </div>
 
-      <hr className="border-neutral-700" />
-
-      {/* Inputs */}
-      <div className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500">
-          Visuals
-        </h2>
-
-        {/* Color Map Selector */}
-        <div className="bg-neutral-800 p-3 rounded border border-neutral-700 space-y-2">
-           <div className="flex items-center gap-2 text-sm mb-1">
-              <Palette size={16} className="text-pink-400"/>
-              <span>Color Map</span>
-            </div>
-           <select
-            value={params.colorMap}
-            onChange={(e) => handleChange('colorMap', e.target.value)}
-            className="w-full bg-neutral-700 border border-neutral-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="turbo">Turbo (Default)</option>
-            <option value="jet">Jet (Rainbow)</option>
-            <option value="hot">Hot (Red-Yellow)</option>
-            <option value="magma">Magma (Dark)</option>
-            <option value="gray">Grayscale</option>
-          </select>
-        </div>
-
-        {/* Vectors Control */}
-        <div className="bg-neutral-800 p-3 rounded border border-neutral-700">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Activity size={16} className="text-blue-400"/>
-              <span>E-Field Vectors</span>
-            </div>
-            <input 
-              type="checkbox"
-              checked={params.showVectors}
-              onChange={(e) => handleChange('showVectors', e.target.checked)}
-              className="w-5 h-5 accent-blue-500 rounded cursor-pointer"
-            />
+      <div className="space-y-6">
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
+             <Move size={14} /> Interaction Mode
+          </h2>
+          <div className="grid grid-cols-2 gap-2 bg-neutral-800/50 p-1 rounded-lg border border-neutral-700">
+            <button
+              onClick={() => onModeChange('fixed')}
+              className={`flex flex-col items-center py-2 rounded-md text-[10px] uppercase font-bold transition-all ${
+                appMode === 'fixed' 
+                ? 'bg-neutral-600 text-white shadow-md' 
+                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700/50'
+              }`}
+            >
+              <Lock size={16} className="mb-1" /> Fixed Plates
+            </button>
+            <button
+              onClick={() => onModeChange('free')}
+              className={`flex flex-col items-center py-2 rounded-md text-[10px] uppercase font-bold transition-all ${
+                appMode === 'free' 
+                ? 'bg-neutral-600 text-white shadow-md' 
+                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700/50'
+              }`}
+            >
+              <Move size={16} className="mb-1" /> Free Move
+            </button>
           </div>
-          
-          {params.showVectors && (
-            <div className="space-y-3 pt-2 border-t border-neutral-700">
-               <div className="flex items-center justify-between">
-                  <label className="text-xs text-neutral-400">Color</label>
-                  <input 
-                    type="color" 
-                    value={params.vectorColor}
-                    onChange={(e) => handleChange('vectorColor', e.target.value)}
-                    className="w-8 h-8 bg-transparent cursor-pointer rounded overflow-hidden"
-                  />
-               </div>
-               <div className="space-y-1">
-                  <div className="flex justify-between">
-                     <label className="text-xs text-neutral-400">Opacity</label>
-                     <span className="text-xs text-neutral-500">{params.vectorOpacity}</span>
-                  </div>
-                  <input 
-                    type="range" min="0.1" max="1" step="0.1"
-                    value={params.vectorOpacity}
-                    onChange={(e) => handleChange('vectorOpacity', e.target.value)}
-                    className="w-full h-1 bg-neutral-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                  />
-               </div>
-               <div className="space-y-1">
-                  <div className="flex justify-between">
-                     <label className="text-xs text-neutral-400">Stroke Width</label>
-                     <span className="text-xs text-neutral-500">{params.vectorWidth}px</span>
-                  </div>
-                  <input 
-                    type="range" min="0.5" max="4" step="0.5"
-                    value={params.vectorWidth}
-                    onChange={(e) => handleChange('vectorWidth', e.target.value)}
-                    className="w-full h-1 bg-neutral-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                  />
-               </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
+            <Activity size={14} /> Physics Settings
+          </h2>
+          <div className="space-y-4 bg-neutral-800/50 p-3 rounded-lg border border-neutral-700">
+            <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-neutral-400">Slab ε</label>
+                    <input type="number" step="0.1" min="1" value={params.epsilonSlab} onChange={(e) => handleChange('epsilonSlab', parseFloat(e.target.value))} className="w-full bg-neutral-700 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-emerald-500 transition-all" />
+                </div>
+                <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-neutral-400">Background ε</label>
+                    <input type="number" step="0.1" min="1" value={params.epsilonBg} onChange={(e) => handleChange('epsilonBg', parseFloat(e.target.value))} className="w-full bg-neutral-700 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-emerald-500 transition-all" />
+                </div>
             </div>
-          )}
-        </div>
 
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500 mt-6">
-          Dielectrics
-        </h2>
-        
-        <div className="space-y-1">
-          <label className="block text-sm">Slab Permittivity (ε)</label>
-          <input
-            type="number"
-            value={params.epsilonSlab}
-            onChange={(e) => handleChange('epsilonSlab', e.target.value)}
-            className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            step="0.5"
-            min="1"
-          />
-        </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-neutral-400">Top Plate (V+)</label>
+              <input type="number" value={params.voltageTop} onChange={(e) => handleChange('voltageTop', parseFloat(e.target.value))} className="w-full bg-neutral-700 rounded px-2 py-1.5 text-sm outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-neutral-400">Bottom Plate (V-)</label>
+              <input type="number" value={params.voltageBottom} onChange={(e) => handleChange('voltageBottom', parseFloat(e.target.value))} className="w-full bg-neutral-700 rounded px-2 py-1.5 text-sm outline-none" />
+            </div>
+          </div>
+        </section>
 
-        <div className="space-y-1">
-          <label className="block text-sm">Background (ε₀)</label>
-          <input
-            type="number"
-            value={params.epsilonBg}
-            onChange={(e) => handleChange('epsilonBg', e.target.value)}
-            className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            step="0.5"
-            min="1"
-          />
-        </div>
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
+            <ShieldCheck size={14} /> Boundaries
+          </h2>
+          <div className="grid grid-cols-2 gap-2 bg-neutral-800/50 p-3 rounded-lg border border-neutral-700">
+            {(['Top', 'Bottom', 'Left', 'Right'] as const).map(side => {
+              const key = `boundary${side}` as keyof SimulationParams;
+              return (
+                <div key={side} className="space-y-1">
+                  <label className="text-[10px] text-neutral-500 font-bold">{side}</label>
+                  <select 
+                    value={params[key] as string} 
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    className="w-full bg-neutral-700 rounded text-[10px] p-1 uppercase appearance-none text-center cursor-pointer"
+                  >
+                    <option value="dirichlet">Grounded</option>
+                    <option value="neumann">Insulated</option>
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500 mt-6">
-          Boundaries
-        </h2>
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-500">
+            <Palette size={14} /> Visualization
+          </h2>
+          <div className="space-y-3 bg-neutral-800/50 p-3 rounded-lg border border-neutral-700">
+            
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-neutral-400">Potential Map</label>
+              <select value={params.colorMap} onChange={(e) => handleChange('colorMap', e.target.value)} className="w-full bg-neutral-700 rounded px-2 py-1.5 text-sm outline-none cursor-pointer">
+                <option value="turbo">Turbo</option>
+                <option value="jet">Jet</option>
+                <option value="magma">Magma</option>
+                <option value="hot">Hot</option>
+                <option value="gray">Grayscale</option>
+              </select>
+            </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm">Top Voltage (V+)</label>
-          <input
-            type="number"
-            value={params.voltageTop}
-            onChange={(e) => handleChange('voltageTop', e.target.value)}
-            className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
+            <div className="pt-2 border-t border-neutral-700">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs">Show E-Field</span>
+                    <input type="checkbox" checked={params.showVectors} onChange={(e) => handleChange('showVectors', e.target.checked)} className="w-4 h-4 accent-emerald-500" />
+                </div>
+                
+                {params.showVectors && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex items-center justify-between gap-2">
+                            <label className="text-[10px] text-neutral-400">Color</label>
+                            <div className="flex items-center gap-2 bg-neutral-700 rounded-md p-1 pr-2">
+                                <input type="color" value={params.vectorColor} onChange={(e) => handleChange('vectorColor', e.target.value)} className="w-4 h-4 rounded cursor-pointer bg-transparent border-none p-0" />
+                                <span className="text-[10px] font-mono uppercase">{params.vectorColor}</span>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                           <div className="flex justify-between">
+                             <label className="text-[10px] text-neutral-400">Opacity</label>
+                             <span className="text-[10px] text-neutral-500">{Math.round(params.vectorOpacity * 100)}%</span>
+                           </div>
+                           <input type="range" min="0.1" max="1" step="0.1" value={params.vectorOpacity} onChange={(e) => handleChange('vectorOpacity', parseFloat(e.target.value))} className="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-neutral-400" />
+                        </div>
+                    </div>
+                )}
+            </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm">Bottom Voltage (V-)</label>
-          <input
-            type="number"
-            value={params.voltageBottom}
-            onChange={(e) => handleChange('voltageBottom', e.target.value)}
-            className="w-full bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );
