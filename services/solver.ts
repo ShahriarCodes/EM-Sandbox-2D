@@ -1,6 +1,6 @@
 
 import { GRID_SIZE, ITERATIONS_PER_FRAME } from '../constants';
-import { SimulationParams, SlabState, ColorMapType } from '../types';
+import { SimulationParams, SlabState, ColorMapType, PlateState } from '../types';
 
 /**
  * Maps grid coordinates to an array index.
@@ -21,11 +21,10 @@ export const updateEpsilonGrid = (
   epsGrid.fill(epsilonBg);
 
   // Rasterize slab (simple bounding box check)
-  // We use floor/ceil to cover partial cells reasonably well
   const startX = Math.max(0, Math.floor(slab.x));
-  const endX = Math.min(GRID_SIZE - 1, Math.ceil(slab.x + slab.width));
+  const endX = Math.min(GRID_SIZE, Math.ceil(slab.x + slab.width));
   const startY = Math.max(0, Math.floor(slab.y));
-  const endY = Math.min(GRID_SIZE - 1, Math.ceil(slab.y + slab.height));
+  const endY = Math.min(GRID_SIZE, Math.ceil(slab.y + slab.height));
 
   for (let y = startY; y < endY; y++) {
     for (let x = startX; x < endX; x++) {
@@ -35,22 +34,30 @@ export const updateEpsilonGrid = (
 };
 
 /**
- * Initializes boundary conditions for the Potential grid.
+ * Enforces Dirichlet boundary conditions from plates onto the potential grid.
+ * This overwrites the potential values at plate locations.
  */
-export const applyBoundaries = (
+export const embedPlates = (
   potGrid: Float64Array,
+  plates: PlateState[],
   params: SimulationParams
 ) => {
-  const { voltageTop, voltageBottom } = params;
+  for (const plate of plates) {
+    const voltage = params[plate.voltageParam];
+    
+    const startX = Math.max(0, Math.floor(plate.x));
+    const endX = Math.min(GRID_SIZE, Math.ceil(plate.x + plate.width));
+    const startY = Math.max(0, Math.floor(plate.y));
+    const endY = Math.min(GRID_SIZE, Math.ceil(plate.y + plate.height));
 
-  // Top row (Fixed Voltage)
-  for (let x = 0; x < GRID_SIZE; x++) {
-    potGrid[idx(x, 0)] = voltageTop;
-  }
-
-  // Bottom row (Fixed Voltage)
-  for (let x = 0; x < GRID_SIZE; x++) {
-    potGrid[idx(x, GRID_SIZE - 1)] = voltageBottom;
+    for (let y = startY; y < endY; y++) {
+      for (let x = startX; x < endX; x++) {
+        // Bounds check to be safe
+        if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+           potGrid[idx(x, y)] = voltage;
+        }
+      }
+    }
   }
 };
 
@@ -61,37 +68,46 @@ export const applyBoundaries = (
 export const solveStep = (
   potGrid: Float64Array,
   epsGrid: Float32Array,
+  plates: PlateState[],
   params: SimulationParams
 ) => {
-  // Use a temporary buffer or update in place (Gauss-Seidel). 
-  // Gauss-Seidel is in-place and generally converges faster for this than Jacobi.
-  
-  // We skip the top and bottom rows (Dirichlet boundaries)
-  // We handle left and right as Neumann (dV/dx = 0) by copying neighbors
   
   for (let iter = 0; iter < ITERATIONS_PER_FRAME; iter++) {
-    for (let y = 1; y < GRID_SIZE - 1; y++) {
-      for (let x = 0; x < GRID_SIZE; x++) {
-        
-        // Handle Left/Right Neumann boundaries
-        if (x === 0) {
-          potGrid[idx(x, y)] = potGrid[idx(x + 1, y)];
-          continue;
-        }
-        if (x === GRID_SIZE - 1) {
-          potGrid[idx(x, y)] = potGrid[idx(x - 1, y)];
-          continue;
-        }
+    
+    // 1. Enforce Edge Boundaries (Outer Box)
+    // Top Edge
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (params.boundaryTop === 'neumann') potGrid[idx(x, 0)] = potGrid[idx(x, 1)];
+      else potGrid[idx(x, 0)] = 0; // Grounded if Dirichlet (unless plate overrides)
+    }
+    // Bottom Edge
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (params.boundaryBottom === 'neumann') potGrid[idx(x, GRID_SIZE - 1)] = potGrid[idx(x, GRID_SIZE - 2)];
+      else potGrid[idx(x, GRID_SIZE - 1)] = 0;
+    }
+    // Left Edge
+    for (let y = 0; y < GRID_SIZE; y++) {
+      if (params.boundaryLeft === 'neumann') potGrid[idx(0, y)] = potGrid[idx(1, y)];
+      else potGrid[idx(0, y)] = 0;
+    }
+    // Right Edge
+    for (let y = 0; y < GRID_SIZE; y++) {
+      if (params.boundaryRight === 'neumann') potGrid[idx(GRID_SIZE - 1, y)] = potGrid[idx(GRID_SIZE - 2, y)];
+      else potGrid[idx(GRID_SIZE - 1, y)] = 0;
+    }
 
+    // 2. Relaxation Loop (Interior)
+    for (let y = 1; y < GRID_SIZE - 1; y++) {
+      for (let x = 1; x < GRID_SIZE - 1; x++) {
+        
         const i = idx(x, y);
         
-        // Neighbors indices
         const iU = idx(x, y - 1);
         const iD = idx(x, y + 1);
         const iL = idx(x - 1, y);
         const iR = idx(x + 1, y);
 
-        // Permittivities at half-steps (average between cells)
+        // Permittivities at half-steps
         const epsU = (epsGrid[i] + epsGrid[iU]) * 0.5;
         const epsD = (epsGrid[i] + epsGrid[iD]) * 0.5;
         const epsL = (epsGrid[i] + epsGrid[iL]) * 0.5;
@@ -99,7 +115,6 @@ export const solveStep = (
 
         const sumEps = epsU + epsD + epsL + epsR;
 
-        // Discrete Poisson equation update
         const newPot = (
           epsU * potGrid[iU] +
           epsD * potGrid[iD] +
@@ -110,6 +125,10 @@ export const solveStep = (
         potGrid[i] = newPot;
       }
     }
+
+    // 3. Enforce Plates (Dirichlet overrides)
+    // This happens after relaxation to strictly enforce the source voltages
+    embedPlates(potGrid, plates, params);
   }
 };
 
@@ -117,14 +136,12 @@ export const solveStep = (
 
 interface RGB { r: number; g: number; b: number; }
 
-// Simple linear interpolation between two colors
 const lerpRGB = (c1: RGB, c2: RGB, t: number): RGB => ({
   r: Math.round(c1.r + (c2.r - c1.r) * t),
   g: Math.round(c1.g + (c2.g - c1.g) * t),
   b: Math.round(c1.b + (c2.b - c1.b) * t),
 });
 
-// Helper to get color from multi-stop gradients
 const getMultiStopColor = (t: number, stops: { pos: number; color: RGB }[]): RGB => {
   if (t <= 0) return stops[0].color;
   if (t >= 1) return stops[stops.length - 1].color;
@@ -139,7 +156,6 @@ const getMultiStopColor = (t: number, stops: { pos: number; color: RGB }[]): RGB
   return stops[stops.length - 1].color;
 };
 
-// Gradient Definitions
 const COLOR_MAPS: Record<string, { pos: number, color: RGB }[]> = {
   jet: [
     { pos: 0, color: { r: 0, g: 0, b: 128 } },
@@ -169,8 +185,6 @@ const COLOR_MAPS: Record<string, { pos: number, color: RGB }[]> = {
 };
 
 const getTurboColor = (t: number): RGB => {
-  // Procedural approximation of Turbo
-  // t: 0..1
   let r = 0, g = 0, b = 0;
   if (t < 0.25) { 
     b = 255; g = Math.floor(255 * (t / 0.25)); 
@@ -189,25 +203,16 @@ const getColor = (t: number, type: ColorMapType): RGB => {
   return getMultiStopColor(t, COLOR_MAPS[type] || COLOR_MAPS['jet']);
 };
 
-/**
- * Generates a CSS gradient string for the Legend based on the selected colormap.
- */
 export const getGradientCSS = (type: ColorMapType, direction: string = 'to right'): string => {
   if (type === 'turbo') {
     return `linear-gradient(${direction}, rgb(0,0,255), rgb(0,255,255), rgb(0,255,0), rgb(255,255,0), rgb(255,0,0))`;
   }
-  
   if (!COLOR_MAPS[type]) return `linear-gradient(${direction}, black, white)`;
-
   const stops = COLOR_MAPS[type];
   const cssStops = stops.map(s => `rgb(${s.color.r},${s.color.g},${s.color.b}) ${s.pos * 100}%`).join(', ');
   return `linear-gradient(${direction}, ${cssStops})`;
 };
 
-/**
- * Fast renderer: Creates a 100x100 ImageData and returns it.
- * The canvas component will then draw this scaled up.
- */
 export const generateHeatmapData = (
   potGrid: Float64Array,
   params: SimulationParams
@@ -230,16 +235,12 @@ export const generateHeatmapData = (
     data[px] = r;
     data[px + 1] = g;
     data[px + 2] = b;
-    data[px + 3] = 255; // Alpha
+    data[px + 3] = 255; 
   }
 
   return imgData;
 };
 
-
-/**
- * Draws a quiver plot of the Electric Field (E = -grad V)
- */
 export const renderVectorField = (
   ctx: CanvasRenderingContext2D,
   potGrid: Float64Array,
@@ -248,8 +249,8 @@ export const renderVectorField = (
   params: SimulationParams
 ) => {
   const { vectorColor, vectorWidth, vectorOpacity } = params;
-  const STRIDE = 5; // Draw an arrow every 5 grid cells
-  const SCALE_FACTOR = canvasWidth / GRID_SIZE; // Pixels per grid cell
+  const STRIDE = 5; 
+  const SCALE_FACTOR = canvasWidth / GRID_SIZE; 
   
   ctx.save();
   ctx.strokeStyle = vectorColor;
@@ -259,85 +260,58 @@ export const renderVectorField = (
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // We loop through the grid with a stride
   for (let y = 2; y < GRID_SIZE - 2; y += STRIDE) {
     for (let x = 2; x < GRID_SIZE - 2; x += STRIDE) {
-      // Calculate Gradient (-dV/dx, -dV/dy)
-      // E = - grad V
-      // Using central difference for better accuracy
       const dVdx = (potGrid[idx(x + 1, y)] - potGrid[idx(x - 1, y)]) / 2;
       const dVdy = (potGrid[idx(x, y + 1)] - potGrid[idx(x, y - 1)]) / 2;
-
       const Ex = -dVdx;
       const Ey = -dVdy;
-
       const mag = Math.sqrt(Ex * Ex + Ey * Ey);
       
-      // If field is negligible, skip
       if (mag < 0.01) continue;
 
-      // Arrow position in canvas pixels
-      // Shift by 0.5 to center in the cell
       const px = (x + 0.5) * SCALE_FACTOR;
       const py = (y + 0.5) * SCALE_FACTOR;
 
-      // Arrow visual length
-      // We clamp the length so it doesn't overlap neighbors too much
-      // A magnitude of 1.0 (approx 1V/cell) is a reasonable reference
       const maxLen = STRIDE * SCALE_FACTOR * 0.9; 
       const visualMag = Math.min(mag * 8, maxLen); 
 
-      // Normalize direction
       const dx = (Ex / mag) * visualMag;
       const dy = (Ey / mag) * visualMag;
 
       drawArrow(ctx, px, py, dx, dy);
     }
   }
-
   ctx.restore();
 };
 
 function drawArrow(ctx: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number) {
   const length = Math.sqrt(dx * dx + dy * dy);
-  if (length < 3) return; // Too small to render nicely
+  if (length < 3) return; 
 
   const angle = Math.atan2(dy, dx);
   const endX = x + dx;
   const endY = y + dy;
-
-  // Arrowhead configuration
-  // Dynamic size based on vector length
   const headLength = Math.min(12, Math.max(5, length * 0.35)); 
-  const headAngle = Math.PI / 6; // 30 degrees
+  const headAngle = Math.PI / 6; 
 
-  // Draw Shaft
-  // We stop the shaft slightly before the end so it doesn't poke through the tip if we were using transparency,
-  // but mostly to separate concerns. Here we just draw it to the "base" of the arrow head.
   ctx.beginPath();
   ctx.moveTo(x, y);
-  // Shorten shaft to sit inside the filled head
   const shaftTipX = endX - (headLength * 0.7) * Math.cos(angle);
   const shaftTipY = endY - (headLength * 0.7) * Math.sin(angle);
   ctx.lineTo(shaftTipX, shaftTipY);
   ctx.stroke();
 
-  // Draw Filled Arrowhead
   ctx.beginPath();
-  ctx.moveTo(endX, endY); // Tip
-  
-  // Right wing
+  ctx.moveTo(endX, endY);
   ctx.lineTo(
     endX - headLength * Math.cos(angle - headAngle),
     endY - headLength * Math.sin(angle - headAngle)
   );
-  
-  // Left wing
   ctx.lineTo(
     endX - headLength * Math.cos(angle + headAngle),
     endY - headLength * Math.sin(angle + headAngle)
   );
-  
   ctx.closePath();
   ctx.fill();
 }
