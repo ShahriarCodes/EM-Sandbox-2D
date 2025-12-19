@@ -70,7 +70,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col items-center justify-center relative p-4 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 to-neutral-950">
         
         <div className="absolute top-6 text-center z-10 opacity-70 pointer-events-none">
-          <h2 className="text-2xl font-light tracking-tight text-white mb-1">Parallel Plate Capacitor</h2>
+           <h2 className="text-4xl font-light tracking-tight text-white mb-1">Parallel Plate Capacitor</h2>
           <p className="text-sm text-neutral-400">
             Real-time finite difference solver on a {params.gridSize}x{params.gridSize} grid
           </p>
