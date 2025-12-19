@@ -1,5 +1,7 @@
 
 export type ColorMapType = 'turbo' | 'jet' | 'hot' | 'gray' | 'magma';
+export type AppMode = 'fixed' | 'free';
+export type BoundaryType = 'dirichlet' | 'neumann';
 
 export interface SimulationParams {
   gridSize: number;
@@ -12,6 +14,11 @@ export interface SimulationParams {
   vectorOpacity: number;
   vectorWidth: number;
   colorMap: ColorMapType;
+  // Edge Boundaries
+  boundaryTop: BoundaryType;
+  boundaryBottom: BoundaryType;
+  boundaryLeft: BoundaryType;
+  boundaryRight: BoundaryType;
 }
 
 export interface SlabState {
@@ -19,6 +26,15 @@ export interface SlabState {
   y: number;
   width: number;
   height: number;
+}
+
+export interface PlateState {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  voltageParam: 'voltageTop' | 'voltageBottom';
 }
 
 export type SolverState = 'RUNNING' | 'PAUSED';
