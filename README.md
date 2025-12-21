@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-App runs at `http://localhost:5173`.
+App runs at `http://localhost:3000`.
 
 ## Brief Solver Math
 The solver implements the generalized Poisson equation with spatially varying permittivity $\varepsilon(x,y)$:
