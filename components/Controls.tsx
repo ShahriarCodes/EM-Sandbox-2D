@@ -29,7 +29,7 @@ const Controls: React.FC<ControlsProps> = ({
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 bg-neutral-900 text-neutral-200 w-full md:w-80 border-b md:border-b-0 md:border-r border-neutral-700 h-auto md:h-full overflow-y-auto shrink-0 scrollbar-thin scrollbar-thumb-neutral-700">
       <div className="space-y-1">
-        <h1 className="text-xl font-bold text-white tracking-tight">EM Sandbox</h1>
+        <h1 className="text-xl font-bold text-white tracking-tight">EM Sandbox 2D</h1>
         <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Poisson Solver (100x100)</p>
       </div>
 
